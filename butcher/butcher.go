@@ -1,7 +1,7 @@
 package butcher
 
 import (
-	"butcher/butcher/internal/slices"
+	"butcher/butcher/internal/customslices"
 	"context"
 	"sync"
 )
