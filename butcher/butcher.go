@@ -31,7 +31,7 @@ type Options struct {
 
 type Callback func(provider ContentProvider)
 
-type Executor func(ctx context.Context, provider ContentProvider, data []interface{})
+type Executor func(ctx context.Context, provider ContentProvider, data []interface{}) error
 
 type Butcher struct {
 	callbacks []Callback
@@ -114,7 +114,7 @@ func (b *Butcher) runExecutor(ctx context.Context, data [][]interface{}) {
 
 		go func(batch []interface{}) {
 			defer wg.Done()
-			b.executor(ctx, b.provider, batch)
+			b.provider.ErrChan <- b.executor(ctx, b.provider, batch)
 
 			<-active
 		}(batch)

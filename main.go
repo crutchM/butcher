@@ -3,6 +3,7 @@ package main
 import (
 	"butcher/butcher"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -52,10 +53,13 @@ func main() {
 }
 
 func Foo() butcher.Executor {
-	return func(ctx context.Context, provider butcher.ContentProvider, data []interface{}) {
+	return func(ctx context.Context, provider butcher.ContentProvider, data []interface{}) error {
 		for _, v := range data {
 			value, _ := v.(Data)
+			if value.Name == "A" {
+				return errors.New("some error")
 
+			}
 			time.Sleep(1 * time.Second)
 
 			provider.OutputChan <- Info{
@@ -63,13 +67,17 @@ func Foo() butcher.Executor {
 				Message: fmt.Sprintf("Name: %s, Value: %d", value.Name, value.Value),
 			}
 		}
+
+		return nil
 	}
 }
 
 func ErrorHandler() butcher.Callback {
 	return func(provider butcher.ContentProvider) {
 		for err := range provider.ErrChan {
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
