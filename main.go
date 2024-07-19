@@ -2,6 +2,7 @@ package main
 
 import (
 	"butcher/butcher"
+	"butcher/genericbutcher"
 	"context"
 	"errors"
 	"fmt"
@@ -20,8 +21,8 @@ type Info struct {
 
 func main() {
 	ctx := context.Background()
-	b := butcher.NewButcher(
-		butcher.Options{
+	b := genericbutcher.NewButcher[Data, Info](
+		genericbutcher.Options{
 			BatchType:    butcher.DivideByField,
 			GroupByField: "Name",
 			Goroutines:   2,
@@ -31,7 +32,7 @@ func main() {
 		ErrorHandler(),
 	)
 
-	b.Run(ctx, []interface{}{
+	b.Run(ctx, []Data{
 		Data{
 			Name:  "A",
 			Value: 1,
@@ -52,11 +53,10 @@ func main() {
 
 }
 
-func Foo() butcher.Executor {
-	return func(ctx context.Context, provider butcher.ContentProvider, data []interface{}) error {
+func Foo() genericbutcher.Executor[Data, Info] {
+	return func(ctx context.Context, provider genericbutcher.ContentProvider[Info], data []Data) error {
 		for _, v := range data {
-			value, _ := v.(Data)
-			if value.Name == "A" {
+			if v.Name == "A" {
 				return errors.New("some error")
 
 			}
@@ -64,7 +64,7 @@ func Foo() butcher.Executor {
 
 			provider.OutputChan <- Info{
 				Caller:  "Foo",
-				Message: fmt.Sprintf("Name: %s, Value: %d", value.Name, value.Value),
+				Message: fmt.Sprintf("Name: %s, Value: %d", v.Name, v.Value),
 			}
 		}
 
@@ -72,8 +72,8 @@ func Foo() butcher.Executor {
 	}
 }
 
-func ErrorHandler() butcher.Callback {
-	return func(provider butcher.ContentProvider) {
+func ErrorHandler() genericbutcher.Callback[Info] {
+	return func(provider genericbutcher.ContentProvider[Info]) {
 		for err := range provider.ErrChan {
 			if err != nil {
 				fmt.Println(err)
@@ -82,8 +82,8 @@ func ErrorHandler() butcher.Callback {
 	}
 }
 
-func Performer() butcher.Callback {
-	return func(provider butcher.ContentProvider) {
+func Performer() genericbutcher.Callback[Info] {
+	return func(provider genericbutcher.ContentProvider[Info]) {
 		for v := range provider.OutputChan {
 			fmt.Println(v)
 		}
